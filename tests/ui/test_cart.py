@@ -20,13 +20,17 @@ def lowest_stock_product(catalog):
     return min((p for p in catalog if p["stock"] >= ADDS), key=lambda p: p["stock"])
 
 
-@pytest.mark.parametrize("pick", [
-    pytest.param(regular_product, id="regular product"),
-    pytest.param(lowest_stock_product, id="lowest stock product"),
-])
-def test_adding_same_product_increases_quantity(shop, catalog, pick):
+# Параметр — назва, а не функція: у звіті видно «lowest stock product», а не <function … at 0x…>
+PRODUCTS = {
+    "regular product": regular_product,
+    "lowest stock product": lowest_stock_product,
+}
+
+
+@pytest.mark.parametrize("kind", PRODUCTS)
+def test_adding_same_product_increases_quantity(shop, catalog, kind):
     """TM-CART-002"""
-    product = pick(catalog)
+    product = PRODUCTS[kind](catalog)
     shop.go_to_product(product["id"])
     for _ in range(ADDS):
         shop.add_to_cart(product["id"])
