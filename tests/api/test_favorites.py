@@ -1,31 +1,39 @@
 import pytest
 
+from api.endpoints import get_favorites, put_favorites
+
 pytestmark = pytest.mark.api
 
 
-def put_favorites(client, product_ids):
-    return client.request("PUT", "/api/favorites", json={"product_ids": product_ids})
+@pytest.fixture
+def product_ids(catalog):
+    """Два різні товари з каталогу."""
+    return [p["id"] for p in catalog[:2]]
 
 
-def get_favorites(client):
-    return client.request("GET", "/api/favorites").json()["product_ids"]
+def favorites(api):
+    resp = get_favorites(api)
+    assert resp.status_code == 200, resp.text
+    return resp.json()["product_ids"]
 
 
 def test_new_workspace_has_empty_favorites(api):
-    assert get_favorites(api) == []
+    assert favorites(api) == []
 
 
-def test_favorites_are_saved_on_server(api):
-    assert put_favorites(api, ["p01", "p02"]).status_code == 200
-    assert sorted(get_favorites(api)) == ["p01", "p02"]
+def test_favorites_are_saved_on_server(api, product_ids):
+    assert put_favorites(api, product_ids).status_code == 200
+    assert sorted(favorites(api)) == sorted(product_ids)
 
 
-def test_favorites_have_no_duplicates(api):
-    put_favorites(api, ["p01", "p01", "p02"])
-    assert sorted(get_favorites(api)) == ["p01", "p02"]
+def test_favorites_have_no_duplicates(api, product_ids):
+    first, second = product_ids
+    put_favorites(api, [first, first, second])
+    assert sorted(favorites(api)) == sorted(product_ids)
 
 
-def test_remove_from_favorites(api):
-    put_favorites(api, ["p01", "p02"])
-    put_favorites(api, ["p02"]) 
-    assert get_favorites(api) == ["p02"]
+def test_remove_from_favorites(api, product_ids):
+    first, second = product_ids
+    put_favorites(api, [first, second])
+    put_favorites(api, [second])
+    assert favorites(api) == [second]
