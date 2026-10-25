@@ -4,17 +4,24 @@ from selenium.webdriver.common.by import By
 from pages.base_page import TOTALS_KEYS, BasePage, money
 
 STATUSES = {"Підтверджено": "confirmed", "Скасовано": "cancelled"}
+LOADING = "Завантажуємо замовлення"
 
 
 class OrdersPage(BasePage):
     VIEW = (By.ID, "orders-view")
+    LIST = (By.ID, "orders-list")
     CARD = (By.CSS_SELECTOR, '[data-testid="order-card"]')
     SEARCH = (By.ID, "order-search")
     STATUS_FILTER = (By.ID, "order-status")
 
     def wait_open(self):
         self.find(self.VIEW)
+        self.wait_loaded()
         return self
+
+    def wait_loaded(self):
+        """Кожна зміна пошуку чи фільтра перезавантажує список; інших ознак завантаження, крім тексту, немає."""
+        self.wait.until(lambda _: LOADING not in self.driver.find_element(*self.LIST).text)
 
     def orders(self):
         """Картки як словники. Повний id — з кнопки «Повторити»: вона є і в скасованих, а в заголовку лише короткий номер."""
@@ -38,9 +45,11 @@ class OrdersPage(BasePage):
 
     def search(self, text):
         self.type(self.SEARCH, text)
+        self.wait_loaded()
 
     def filter_status(self, status):
         self.select(self.STATUS_FILTER, status)
+        self.wait_loaded()
 
     def cancel(self, order_id):
         self.click((By.CSS_SELECTOR, f'[data-cancel="{order_id}"]'))
