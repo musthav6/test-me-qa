@@ -30,5 +30,5 @@ class ProductDialog(BasePage):
         return self.find(self.SAVED_TEXT).text
 
     def review_has_markup(self):
-        """Ччи проходить html через markdown, чи збережено як plain text. True — є тег всередині <p>."""
+        """чи розібрав браузер текст як HTML: True — є тег всередині <p>."""
         return bool(self.find_all(self.MARKUP_IN_REVIEW))
