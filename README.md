@@ -2,11 +2,11 @@
 
 Автотести для навчального магазину [Test-Me](https://test-me.vzl.one/): **99 тестів** (88 API + 11 UI, зокрема мобільний екран 360px) на Python, pytest, Selenium і requests. Звіт — Allure.
 
-- 📊 **Звіт останнього запуску:** https://musthav6.github.io/test-me-qa/
-- 🐞 **Баг-репорти:** [docs/bugs.md](docs/bugs.md), скріншоти — [docs/screenshots/](docs/screenshots/)
-- 📋 **Тест-план:** [docs/test-plan.md](docs/test-plan.md) — стратегія, пріоритети, ризики, поза покриттям
-- ✅ **Тест-кейси:** [docs/test-cases.md](docs/test-cases.md) — у форматі зразка з ТЗ, зі зв'язком на автотести
-- 📁 **Уся документація:** [docs/](docs/)
+- **Звіт останнього запуску:** https://musthav6.github.io/test-me-qa/
+- **Баг-репорти:** [docs/bugs.md](docs/bugs.md), скріншоти — [docs/screenshots/](docs/screenshots/)
+- **Тест-план:** [docs/test-plan.md](docs/test-plan.md) — стратегія, пріоритети, ризики, поза покриттям
+- **Тест-кейси:** [docs/test-cases.md](docs/test-cases.md) — у форматі зразка з ТЗ, зі зв'язком на автотести
+- **Уся документація:** [docs/](docs/)
 
 ## Запустити в GitHub (нічого не встановлюючи)
 
