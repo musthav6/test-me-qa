@@ -7,7 +7,6 @@ COUPONS = {"WELCOME10": 10}  # промокод
 
 
 def normalize_coupon(code):
-
     return code.strip().upper()
 
 
