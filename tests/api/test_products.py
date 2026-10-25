@@ -1,80 +1,101 @@
+import math
+
 import pytest
+
+from api.endpoints import get_product, get_products
+from helpers.catalog import PAGE_LIMIT, out_of_stock, short_name
 
 pytestmark = pytest.mark.api
 
+CATEGORIES = ["Audio", "Workspace", "Lifestyle"]
+PAGE_SIZE = 6  # ТЗ: по 6 товарів на сторінці
 
-def get_products(client, **params):
-    resp = client.request("GET", "/api/products", params=params)
+
+def found(client, **filters):
+    """Товари, які повертає каталог з фільтрами."""
+    resp = get_products(client, **filters)
     assert resp.status_code == 200, resp.text
-    return resp.json()
+    return resp.json()["items"]
 
 
-def ids(body):
-    return [p["id"] for p in body["items"]]
+def ids(products):
+    return [p["id"] for p in products]
 
 
-@pytest.mark.parametrize("query", ["Хвиля", "  Хвиля  ", "Хви"])
-def test_search_by_part_of_name(anon_api, query):
-    assert ids(get_products(anon_api, q=query)) == ["p02"]
+@pytest.mark.parametrize("transform", [
+    pytest.param(lambda name: name, id="full name"),
+    pytest.param(lambda name: name[:3], id="part of name"),
+    pytest.param(lambda name: f"  {name}  ", id="outer spaces"),
+    pytest.param(str.lower, id="lower case"),
+    pytest.param(str.upper, id="upper case"),
+])
+def test_search_by_part_of_name(anon_api, catalog, transform):
+    product = catalog[0]
+    query = transform(short_name(product))
+    result = found(anon_api, q=query, limit=PAGE_LIMIT)
+    assert product["id"] in ids(result)
+    assert all(query.strip().lower() in p["name"].lower() for p in result)
 
 
-@pytest.mark.xfail(strict=True, reason="BUG-008: пошук чутливий до регістру")
-@pytest.mark.parametrize("query", ["хвиля", "ХВИЛЯ"])
-def test_search_ignores_case(anon_api, query):
-    assert ids(get_products(anon_api, q=query)) == ["p02"]
+@pytest.mark.parametrize("category", CATEGORIES)
+def test_category_filter(anon_api, catalog, category):
+    result = found(anon_api, category=category, limit=PAGE_LIMIT)
+    assert sorted(ids(result)) == sorted(p["id"] for p in catalog if p["category"] == category)
 
 
-def test_category_filter(anon_api):
-    body = get_products(anon_api, category="Audio", limit=20)
-    assert body["items"]
-    assert {p["category"] for p in body["items"]} == {"Audio"}
+def test_price_bounds_are_inclusive(anon_api, catalog):
+    price = catalog[0]["price"]
+    result = found(anon_api, min_price=price, max_price=price, limit=PAGE_LIMIT)
+    assert sorted(ids(result)) == sorted(p["id"] for p in catalog if p["price"] == price)
 
 
-def test_price_bounds_are_inclusive(anon_api):
-    # p02 коштує рівно 150000: має потрапити і під min, і під max
-    body = get_products(anon_api, min_price=150000, max_price=150000, limit=20)
-    assert "p02" in ids(body)
-    assert all(p["price"] == 150000 for p in body["items"])
+def test_min_price_greater_than_max_returns_422(anon_api, catalog):
+    price = catalog[0]["price"]
+    assert get_products(anon_api, min_price=price + 1, max_price=price).status_code == 422
 
 
-def test_min_price_greater_than_max_is_rejected(anon_api):
-    resp = anon_api.request("GET", "/api/products", params={"min_price": 200000, "max_price": 100000})
-    assert resp.status_code == 422
+def test_in_stock_excludes_zero_stock(anon_api, catalog):
+    result = found(anon_api, in_stock="true", limit=PAGE_LIMIT)
+    assert out_of_stock(catalog)["id"] not in ids(result)
+    assert sorted(ids(result)) == sorted(p["id"] for p in catalog if p["stock"] > 0)
 
 
-def test_in_stock_excludes_zero_stock(anon_api):
-    body = get_products(anon_api, in_stock="true", limit=20)
-    assert "p06" not in ids(body)  # «Мандрівник», stock 0
-    assert all(p["stock"] > 0 for p in body["items"])
+@pytest.mark.parametrize("sort, descending", [("price_asc", False), ("price_desc", True)])
+def test_sort_by_price_is_numeric(anon_api, sort, descending):
+    prices = [p["price"] for p in found(anon_api, sort=sort, limit=PAGE_LIMIT)]
+    assert prices == sorted(prices, reverse=descending)
 
 
-@pytest.mark.parametrize("sort, reverse", [("price_asc", False), ("price_desc", True)])
-def test_sort_by_price_is_numeric(anon_api, sort, reverse):
-    prices = [p["price"] for p in get_products(anon_api, sort=sort, limit=20)["items"]]
-    assert prices == sorted(prices, reverse=reverse)
+def test_filters_combine(anon_api, catalog):
+    product = catalog[0]
+    filters = {"category": product["category"], "in_stock": "true", "max_price": product["price"]}
+    result = found(anon_api, **filters, sort="price_asc", limit=PAGE_LIMIT)
+    expected = [p for p in catalog
+                if p["category"] == filters["category"] and p["stock"] > 0 and p["price"] <= filters["max_price"]]
+    assert sorted(ids(result)) == sorted(ids(expected))
+    assert [p["price"] for p in result] == sorted(p["price"] for p in result)
 
 
-def test_filters_combine(anon_api):
-    body = get_products(anon_api, category="Audio", in_stock="true", sort="price_asc", max_price=200000, limit=20)
-    prices = [p["price"] for p in body["items"]]
-    assert all(p["category"] == "Audio" and p["stock"] > 0 and p["price"] <= 200000 for p in body["items"])
-    assert prices == sorted(prices)
+def test_pages_have_6_products_without_overlaps(anon_api, catalog):
+    page_count = math.ceil(len(catalog) / PAGE_SIZE)
+    pages = [found(anon_api, page=n) for n in range(1, page_count + 1)]
+    assert all(len(page) == PAGE_SIZE for page in pages[:-1])
+    all_ids = [p for page in pages for p in ids(page)]
+    assert sorted(all_ids) == sorted(ids(catalog))
 
 
-def test_pagination_has_no_overlaps(anon_api):
-    page1 = ids(get_products(anon_api, page=1, limit=6))
-    page2 = ids(get_products(anon_api, page=2, limit=6))
-    assert len(page1) == 6
-    assert not set(page1) & set(page2)
+@pytest.mark.parametrize("limit", [0, PAGE_LIMIT + 1])
+def test_limit_out_of_range_returns_422(anon_api, limit):
+    assert get_products(anon_api, limit=limit).status_code == 422
 
 
-def test_product_details(anon_api):
-    resp = anon_api.request("GET", "/api/products/p01")
+def test_product_details(anon_api, catalog):
+    resp = get_product(anon_api, catalog[0]["id"])
     assert resp.status_code == 200
     product = resp.json()
     for field in ("name", "price", "stock", "description", "specs", "image"):
-        assert product.get(field), field
+        assert field in product and product[field] not in ("", None, [], {}), field
 
 
 def test_unknown_product_returns_404(anon_api):
-    assert anon_api.request("GET", "/api/products/p999").status_code == 404
+    assert get_product(anon_api, "p999").status_code == 404
