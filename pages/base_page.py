@@ -12,7 +12,7 @@ TOTALS_KEYS = {"Товари": "subtotal", "Знижка": "discount", "Дост
 
 
 def money(text):
-    """в копійках: "1 234,56 ₴" → 123456"""
+    """в копійках: "1 234,56 грн" → 123456"""
     return int("".join(ch for ch in text if ch.isdigit()))
 
 

@@ -3,6 +3,7 @@ from selenium import webdriver
 
 from api.client import ApiClient
 from helpers.catalog import load_catalog
+from pages.shop_page import ShopPage
 
 
 def pytest_addoption(parser):
@@ -27,7 +28,7 @@ def other_api():
 
 @pytest.fixture(scope="session")
 def catalog():
-    """Каталог один раз завантажуємо бо він однаковий"""
+    """Каталог один раз завантажуємо"""
     return load_catalog(ApiClient())
 
 
@@ -46,3 +47,15 @@ def driver(request):
     drv = webdriver.Chrome(options=options)
     yield drv
     drv.quit()
+
+
+@pytest.fixture
+def shop(driver):
+    """Свіжий браузер = нове середовище: магазин сам створює token."""
+    return ShopPage(driver).open()
+
+
+@pytest.fixture
+def ui_api(shop):
+    """API того самого середовища, що й браузер: готуємо дані й звіряємо результат."""
+    return ApiClient(token=shop.token())
