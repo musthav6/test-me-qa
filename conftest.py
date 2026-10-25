@@ -1,3 +1,4 @@
+import allure
 import pytest
 from selenium import webdriver
 
@@ -8,6 +9,17 @@ from pages.shop_page import ShopPage
 
 def pytest_addoption(parser):
     parser.addoption("--headed", action="store_true", help="Запуск браузера з вікном")
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    """Коли UI-тест падає, додаємо в Allure скріншот і адресу сторінки — доказ розбіжності."""
+    report = yield
+    driver = item.funcargs.get("driver")
+    if report.failed and driver is not None:
+        allure.attach(driver.get_screenshot_as_png(), "screenshot", allure.attachment_type.PNG)
+        allure.attach(driver.current_url, "url", allure.attachment_type.URI_LIST)
+    return report
 
 
 @pytest.fixture
