@@ -10,6 +10,7 @@ class ApiClient:
 
     def __init__(self, token=None, base_url=BASE_URL):
         self.base_url = base_url
+        self.token = token
         self.session = requests.Session()
         self.session.headers["User-Agent"] = "test-me-qa/1.0"
         if token:

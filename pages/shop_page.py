@@ -1,7 +1,8 @@
 """Каталог і шапка магазину."""
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 
-from pages.base_page import BasePage
+from pages.base_page import STORAGE_KEY, BasePage
 from pages.cart_dialog import CartDialog
 from pages.orders_page import OrdersPage
 from pages.product_dialog import ProductDialog
@@ -17,16 +18,25 @@ class ShopPage(BasePage):
     ORDERS_NAV = (By.CSS_SELECTOR, '[data-nav="orders"]')
     NEXT_PAGE = (By.ID, "next")
     PAGE_INFO = (By.ID, "page-info")
+    WORKSPACE_STATUS = (By.ID, "workspace-status")
 
     @staticmethod
     def add_button(product_id):
         return By.CSS_SELECTOR, f'.product-card [data-add="{product_id}"]'
 
-    def open(self):
-        """Відкриваємо магазин і чекаємо, поки завантажиться каталог і з'явиться token."""
+    def open(self, token):
+        """Магазин стартує з готовим token: сам він створює середовище без повтору на 429 і зависає."""
+        self.driver.get(self.url + "api/health")  # той самий origin, тож localStorage спільний із магазином
+        self.driver.execute_script(
+            "localStorage.setItem(arguments[0], JSON.stringify({token: arguments[1], cart: [], compare: []}))",
+            STORAGE_KEY, token)
         self.driver.get(self.url)
-        self.find(self.GRID)
-        self.token()
+        try:
+            self.find(self.GRID)
+        except TimeoutException:
+            status = self.driver.find_element(*self.WORKSPACE_STATUS).text
+            raise TimeoutException(f"Каталог не завантажився. Статус магазину: {status}") from None
+        assert self.token() == token, "Магазин замінив token: UI і API працювали б з різними середовищами"
         return self
 
     def go_to_product(self, product_id):

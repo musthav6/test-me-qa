@@ -50,7 +50,7 @@ class BasePage:
         return json.loads(raw) if raw else {}
 
     def token(self):
-        """Token середовища, яке магазин створив у цьому браузері."""
+        """Token, з яким працює магазин у цьому браузері."""
         return self.wait.until(lambda _: self.storage().get("token"))
 
     def reload(self):

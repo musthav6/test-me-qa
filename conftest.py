@@ -50,12 +50,12 @@ def driver(request):
 
 
 @pytest.fixture
-def shop(driver):
-    """Свіжий браузер = нове середовище: магазин сам створює token."""
-    return ShopPage(driver).open()
+def ui_api():
+    """Середовище для браузера створює API-клієнт: він чекає Retry-After на 429, а магазин — ні."""
+    return ApiClient(token=ApiClient().create_workspace())
 
 
 @pytest.fixture
-def ui_api(shop):
-    """API того самого середовища, що й браузер: готуємо дані й звіряємо результат."""
-    return ApiClient(token=shop.token())
+def shop(driver, ui_api):
+    """Свіжий браузер із середовищем ui_api: UI і API бачать ті самі кошик, замовлення, відгуки."""
+    return ShopPage(driver).open(ui_api.token)
