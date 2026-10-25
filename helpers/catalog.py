@@ -3,8 +3,8 @@ from itertools import combinations
 
 from api.endpoints import get_products, line
 
-MAX_QUANTITY = 10 
-PAGE_LIMIT = 20 
+MAX_QUANTITY = 10
+PAGE_LIMIT = 20
 
 
 def load_catalog(client):
