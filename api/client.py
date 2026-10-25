@@ -7,12 +7,10 @@ BASE_URL = os.getenv("BASE_URL", "https://test-me.vzl.one")
 
 
 class ApiClient:
-    """Тонка обгортка над requests: базова адреса, token середовища, повтор на 429."""
 
     def __init__(self, token=None, base_url=BASE_URL):
         self.base_url = base_url
         self.session = requests.Session()
-        # Cloudflare блокує стандартний User-Agent Python, тому задаємо свій
         self.session.headers["User-Agent"] = "test-me-qa/1.0"
         if token:
             self.session.headers["X-Workspace-Token"] = token
