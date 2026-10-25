@@ -9,20 +9,21 @@ pytestmark = pytest.mark.api
 
 REVIEW_TEXT = "Відгук першого середовища"
 
-# Кожен захищений ендпоінт із ТЗ: (client, product_id) → Response
-PROTECTED = [
-    pytest.param(lambda c, pid: get_favorites(c), id="GET favorites"),
-    pytest.param(lambda c, pid: put_favorites(c, [pid]), id="PUT favorites"),
-    pytest.param(lambda c, pid: get_review(c, pid), id="GET review"),
-    pytest.param(lambda c, pid: post_review(c, pid, 5, REVIEW_TEXT), id="POST review"),
-    pytest.param(lambda c, pid: quote(c, [line(pid)]), id="POST quote"),
-    pytest.param(lambda c, pid: get_orders(c), id="GET orders"),
-]
+# Кожен захищений ендпоінт із ТЗ: назва → (client, product_id) → Response
+PROTECTED = {
+    "GET favorites": lambda c, pid: get_favorites(c),
+    "PUT favorites": lambda c, pid: put_favorites(c, [pid]),
+    "GET review": lambda c, pid: get_review(c, pid),
+    "POST review": lambda c, pid: post_review(c, pid, 5, REVIEW_TEXT),
+    "POST quote": lambda c, pid: quote(c, [line(pid)]),
+    "GET orders": lambda c, pid: get_orders(c),
+}
 
 
-@pytest.mark.parametrize("call", PROTECTED)
+@pytest.mark.parametrize("endpoint", PROTECTED)
 @pytest.mark.parametrize("token", [None, "invalid-token"], ids=["no token", "invalid token"])
-def test_protected_endpoints_require_valid_token(catalog, call, token):
+def test_protected_endpoints_require_valid_token(catalog, endpoint, token):
+    call = PROTECTED[endpoint]
     assert call(ApiClient(token=token), in_stock(catalog)["id"]).status_code == 401
 
 

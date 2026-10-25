@@ -22,16 +22,20 @@ def ids(products):
     return [p["id"] for p in products]
 
 
-@pytest.mark.parametrize("transform", [
-    pytest.param(lambda name: name, id="full name"),
-    pytest.param(lambda name: name[:3], id="part of name"),
-    pytest.param(lambda name: f"  {name}  ", id="outer spaces"),
-    pytest.param(str.lower, id="lower case"),
-    pytest.param(str.upper, id="upper case"),
-])
-def test_search_by_part_of_name(anon_api, catalog, transform):
+
+QUERIES = {
+    "full name": lambda name: name,
+    "part of name": lambda name: name[:3],
+    "outer spaces": lambda name: f"  {name}  ",
+    "lower case": str.lower,
+    "upper case": str.upper,
+}
+
+
+@pytest.mark.parametrize("variant", QUERIES)
+def test_search_by_part_of_name(anon_api, catalog, variant):
     product = catalog[0]
-    query = transform(short_name(product))
+    query = QUERIES[variant](short_name(product))
     result = found(anon_api, q=query, limit=PAGE_LIMIT)
     assert product["id"] in ids(result)
     assert all(query.strip().lower() in p["name"].lower() for p in result)
