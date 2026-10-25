@@ -8,6 +8,7 @@ from api.client import BASE_URL
 
 STORAGE_KEY = "test-me:v2"
 TIMEOUT = 10
+MOBILE_WIDTH = 360  # ТЗ: адаптивність від 360px
 TOTALS_KEYS = {"Товари": "subtotal", "Знижка": "discount", "Доставка": "shipping", "Разом": "total"}
 
 
@@ -52,6 +53,13 @@ class BasePage:
     def token(self):
         """Token, з яким працює магазин у цьому браузері."""
         return self.wait.until(lambda _: self.storage().get("token"))
+
+    def viewport_width(self):
+        return self.driver.execute_script("return document.documentElement.clientWidth")
+
+    def horizontal_overflow(self):
+        """На скільки px вміст ширший за екран: більше 0 — з'являється горизонтальний скрол."""
+        return self.driver.execute_script("const e = document.documentElement; return e.scrollWidth - e.clientWidth")
 
     def reload(self):
         self.driver.refresh()

@@ -4,6 +4,7 @@ from selenium import webdriver
 
 from api.client import ApiClient
 from helpers.catalog import load_catalog
+from pages.base_page import MOBILE_WIDTH
 from pages.shop_page import ShopPage
 
 
@@ -56,6 +57,10 @@ def driver(request):
     if not request.config.getoption("--headed"):
         options.add_argument("--headless=new")
     options.add_argument("--window-size=1400,900")
+    if request.node.get_closest_marker("mobile"):
+        # Емуляція телефона
+        options.add_experimental_option("mobileEmulation",
+                                        {"deviceMetrics": {"width": MOBILE_WIDTH, "height": 740, "pixelRatio": 3}})
     drv = webdriver.Chrome(options=options)
     yield drv
     drv.quit()
