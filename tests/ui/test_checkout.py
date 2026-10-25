@@ -1,7 +1,7 @@
 import pytest
 
 from api.endpoints import get_orders, line
-from helpers.catalog import find, prices
+from helpers.catalog import find, in_stock, prices
 from helpers.pricing import FREE_SHIPPING_FROM, expected_quote
 from pages.orders_page import OrdersPage
 from pages.shop_page import PAGE_SIZE
@@ -63,3 +63,16 @@ def test_checkout_with_coupon_and_standard_delivery(shop, ui_api, catalog, custo
     shop.reload()
     assert OrdersPage(shop.driver).wait_open().wait_orders(1) == [order]
     assert shop.open_cart().lines() == []
+
+
+def test_double_click_creates_single_order(shop, ui_api, catalog, customer):
+    """TM-CHECKOUT-004"""
+    shop.add_to_cart(in_stock(catalog[:PAGE_SIZE])["id"])
+    shop.wait_cart_count(1)
+    cart = shop.open_cart()
+    cart.fill_contacts(customer)
+
+    cart.double_click_place_order()
+    shop.wait_toast("Замовлення успішно оформлено")
+    [order] = OrdersPage(shop.driver).wait_open().wait_orders(1)
+    assert server_order_ids(ui_api) == [order["id"]]
