@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from pages.base_page import BasePage
 from pages.cart_dialog import CartDialog
 from pages.orders_page import OrdersPage
+from pages.product_dialog import ProductDialog
 
 PAGE_SIZE = 6  # ТЗ: по 6 товарів на сторінці
 
@@ -25,6 +26,10 @@ class ShopPage(BasePage):
         self.find(self.GRID)
         self.token()
         return self
+
+    def open_product(self, product_id):
+        self.click((By.CSS_SELECTOR, f'.product-card .product-title[data-detail="{product_id}"]'))
+        return ProductDialog(self.driver).wait_open()
 
     def add_to_cart(self, product_id):
         self.click(self.add_button(product_id))
