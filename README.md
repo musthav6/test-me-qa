@@ -31,13 +31,29 @@
 winget install Python.Python.3.12 Google.Chrome OpenJS.NodeJS.LTS
 ```
 
+На macOS достатньо встановлювачів із сайтів вище, Homebrew і git не потрібні.
+
 **2. Завантажити проєкт:** на сторінці репозиторію **Code → Download ZIP** і розпакувати, або `git clone https://github.com/musthav6/test-me-qa.git`.
 
-**3. Запустити:** відкрити термінал у папці проєкту (у Windows: у папці правою кнопкою → **Open in Terminal**) і ввести:
+На macOS можна однією командою в Терміналі — проєкт з'явиться в `~/Downloads/test-me-qa-main`:
 
 ```bash
-python run_tests.py
+cd ~/Downloads && curl -L -o test-me-qa.zip https://github.com/musthav6/test-me-qa/archive/refs/heads/main.zip && unzip -oq test-me-qa.zip && cd test-me-qa-main
 ```
+
+**3. Запустити:** відкрити термінал у папці проєкту і ввести команду.
+
+- **Windows:** у папці правою кнопкою → **Open in Terminal**, далі:
+
+  ```bash
+  python run_tests.py
+  ```
+
+- **macOS:** відкрити **Термінал** (Cmd+Пробіл → Terminal), набрати `cd ` (з пробілом), перетягнути папку проєкту у вікно, натиснути Enter, далі:
+
+  ```bash
+  python3 run_tests.py
+  ```
 
 Скрипт сам створить віртуальне оточення `.venv`, встановить залежності, запустить усі тести в 4 потоки (~2–3 хвилини) і відкриє звіт у браузері. Щоб закрити звіт, натиснути `Ctrl+C` у терміналі.
 
@@ -49,7 +65,7 @@ python run_tests.py -m ui                                   # лише UI
 python run_tests.py tests/ui/test_checkout.py --headed      # один файл, браузер видно на екрані
 ```
 
-На macOS і Linux замість `python` може знадобитися `python3`.
+На macOS і Linux — `python3` замість `python`. Перевірено на macOS (Python 3.14) і Ubuntu (Python 3.12, зокрема в GitHub Actions).
 
 ### Де шукати результати
 
