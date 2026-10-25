@@ -1,8 +1,14 @@
 import pytest
 
+from api.endpoints import health
 
-@pytest.mark.api
-def test_health_ok(anon_api):
-    resp = anon_api.request("GET", "/api/health")
+pytestmark = pytest.mark.api
+
+
+def test_health_reports_version_and_dataset(anon_api):
+    resp = health(anon_api)
     assert resp.status_code == 200
-    assert resp.json()["status"] == "ok"
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["version"]
+    assert body["seed"]

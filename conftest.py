@@ -2,6 +2,7 @@ import pytest
 from selenium import webdriver
 
 from api.client import ApiClient
+from helpers.catalog import load_catalog
 
 
 def pytest_addoption(parser):
@@ -15,8 +16,25 @@ def anon_api():
 
 @pytest.fixture
 def api():
-    token = ApiClient().create_workspace()
-    return ApiClient(token=token)
+    return ApiClient(token=ApiClient().create_workspace())
+
+
+@pytest.fixture
+def other_api():
+    """якщо треба два різні середовища для тестів, наприклад, щоб перевірити, що зміни в одному не впливають на інший"""
+    return ApiClient(token=ApiClient().create_workspace())
+
+
+@pytest.fixture(scope="session")
+def catalog():
+    """Каталог один раз завантажуємо бо він однаковий"""
+    return load_catalog(ApiClient())
+
+
+@pytest.fixture
+def customer():
+    """тестовий юзер"""
+    return {"name": "Денис Тестовий", "email": "test@example.test", "address": "Венеція, Юності 1"}
 
 
 @pytest.fixture
@@ -25,6 +43,6 @@ def driver(request):
     if not request.config.getoption("--headed"):
         options.add_argument("--headless=new")
     options.add_argument("--window-size=1400,900")
-    drv = webdriver.Chrome(options=options) 
+    drv = webdriver.Chrome(options=options)
     yield drv
     drv.quit()
