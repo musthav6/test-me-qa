@@ -1,4 +1,5 @@
 """Діалог кошика: позиції, промокод, доставка, підсумки й оформлення."""
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -73,6 +74,10 @@ class CartDialog(BasePage):
 
     def place_order(self):
         self.click(self.PLACE_ORDER)
+
+    def double_click_place_order(self):
+        """натискаємо багато разів, щоб перевірити, що замовлення не дублюється"""
+        ActionChains(self.driver).double_click(self.find(self.PLACE_ORDER)).perform()
 
     def error(self):
         return self.driver.find_element(*self.ERROR).text
