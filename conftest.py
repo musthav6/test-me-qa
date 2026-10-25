@@ -10,13 +10,11 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def anon_api():
-    """Клієнт без token: каталог, health, перевірки 401."""
     return ApiClient()
 
 
 @pytest.fixture
 def api():
-    """Клієнт із власним новим середовищем на кожен тест: тести незалежні й готові до xdist."""
     token = ApiClient().create_workspace()
     return ApiClient(token=token)
 
@@ -27,6 +25,6 @@ def driver(request):
     if not request.config.getoption("--headed"):
         options.add_argument("--headless=new")
     options.add_argument("--window-size=1400,900")
-    drv = webdriver.Chrome(options=options)  # Selenium Manager сам знайде chromedriver
+    drv = webdriver.Chrome(options=options) 
     yield drv
     drv.quit()
