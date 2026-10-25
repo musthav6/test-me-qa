@@ -1,48 +1,46 @@
 import pytest
 
 from api.client import ApiClient
+from api.endpoints import (cancel_order, create_order, get_favorites, get_order, get_orders, get_review, line,
+                           post_review, put_favorites, quote)
+from helpers.catalog import in_stock
 
 pytestmark = pytest.mark.api
 
-CHECKOUT = {
-    "items": [{"product_id": "p05", "quantity": 1}],
-    "name": "Олександр Тестовий",
-    "email": "test@example.test",
-    "address": "Київ, вул. Тестова, 12",
-}
+REVIEW_TEXT = "Відгук першого середовища"
+
+# Кожен захищений ендпоінт із ТЗ: (client, product_id) → Response
+PROTECTED = [
+    pytest.param(lambda c, pid: get_favorites(c), id="GET favorites"),
+    pytest.param(lambda c, pid: put_favorites(c, [pid]), id="PUT favorites"),
+    pytest.param(lambda c, pid: get_review(c, pid), id="GET review"),
+    pytest.param(lambda c, pid: post_review(c, pid, 5, REVIEW_TEXT), id="POST review"),
+    pytest.param(lambda c, pid: quote(c, [line(pid)]), id="POST quote"),
+    pytest.param(lambda c, pid: get_orders(c), id="GET orders"),
+]
 
 
-@pytest.fixture
-def other_api():
-    """Друге, незалежне середовище."""
-    return ApiClient(token=ApiClient().create_workspace())
+@pytest.mark.parametrize("call", PROTECTED)
+@pytest.mark.parametrize("token", [None, "invalid-token"], ids=["no token", "invalid token"])
+def test_protected_endpoints_require_valid_token(catalog, call, token):
+    assert call(ApiClient(token=token), in_stock(catalog)["id"]).status_code == 401
 
 
-@pytest.mark.parametrize("method, path", [
-    ("GET", "/api/favorites"),
-    ("GET", "/api/orders"),
-    ("POST", "/api/quote"),
-    ("GET", "/api/products/p01/review"),
-])
-@pytest.mark.parametrize("token", [None, "invalid-token"])
-def test_protected_endpoints_require_valid_token(method, path, token):
-    client = ApiClient(token=token)
-    kwargs = {"json": {"items": [{"product_id": "p01", "quantity": 1}]}} if method == "POST" else {}
-    assert client.request(method, path, **kwargs).status_code == 401
+def test_other_workspace_cannot_access_order(api, other_api, catalog, customer):
+    resp = create_order(api, [line(in_stock(catalog)["id"])], customer)
+    assert resp.status_code == 201, resp.text
+    order_id = resp.json()["id"]
+    assert get_order(other_api, order_id).status_code == 404
+    assert cancel_order(other_api, order_id).status_code == 404
+    assert get_orders(other_api).json()["items"] == []
 
 
-def test_other_workspace_cannot_see_order(api, other_api):
-    order_id = api.request("POST", "/api/orders", json=CHECKOUT).json()["id"]
-    assert other_api.request("GET", f"/api/orders/{order_id}").status_code == 404
-    assert other_api.request("POST", f"/api/orders/{order_id}/cancel").status_code == 404
-    assert other_api.request("GET", "/api/orders").json()["items"] == []
+def test_favorites_are_isolated(api, other_api, catalog):
+    assert put_favorites(api, [catalog[0]["id"]]).status_code == 200
+    assert get_favorites(other_api).json()["product_ids"] == []
 
 
-def test_favorites_are_isolated(api, other_api):
-    api.request("PUT", "/api/favorites", json={"product_ids": ["p01"]})
-    assert other_api.request("GET", "/api/favorites").json()["product_ids"] == []
-
-
-def test_reviews_are_isolated(api, other_api):
-    api.request("POST", "/api/products/p01/review", json={"rating": 5, "text": "Відгук першого середовища"})
-    assert other_api.request("GET", "/api/products/p01/review").json()["review"] is None
+def test_reviews_are_isolated(api, other_api, catalog):
+    product_id = catalog[0]["id"]
+    assert post_review(api, product_id, 5, REVIEW_TEXT).status_code == 201
+    assert get_review(other_api, product_id).json()["review"] is None
