@@ -51,12 +51,6 @@ class OrdersPage(BasePage):
         self.select(self.STATUS_FILTER, status)
         self.wait_loaded()
 
-    def cancel(self, order_id):
-        self.click((By.CSS_SELECTOR, f'[data-cancel="{order_id}"]'))
-
-    def reorder(self, order_id):
-        self.click((By.CSS_SELECTOR, f'[data-reorder="{order_id}"]'))
-
     def _card(self, order_id):
         return self.find((By.CSS_SELECTOR, f'[data-testid="order-card"]:has([data-reorder="{order_id}"])'))
 
