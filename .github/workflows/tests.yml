@@ -1,0 +1,66 @@
+name: Tests
+
+# Запуск лише кнопкою: Actions → Tests → Run workflow
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: Які тести запустити
+        type: choice
+        options: [all, api, ui]
+        default: all
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          if [ "${{ inputs.scope }}" = "all" ]; then
+            pytest -n 4
+          else
+            pytest -n 4 -m "${{ inputs.scope }}"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: ${{ !cancelled() }}
+        with:
+          node-version: 22
+
+      - name: Build Allure report
+        if: ${{ !cancelled() }}
+        run: npx --yes allure@3.22.1 generate allure-results -o allure-report --report-name "Test-Me"
+
+      - uses: actions/upload-pages-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          path: allure-report
+
+  report:
+    needs: tests
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
