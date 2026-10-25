@@ -15,6 +15,8 @@ class ShopPage(BasePage):
     CART_OPEN = (By.CSS_SELECTOR, '[data-testid="cart-open"]')
     TOAST = (By.ID, "toast")
     ORDERS_NAV = (By.CSS_SELECTOR, '[data-nav="orders"]')
+    NEXT_PAGE = (By.ID, "next")
+    PAGE_INFO = (By.ID, "page-info")
 
     @staticmethod
     def add_button(product_id):
@@ -26,6 +28,15 @@ class ShopPage(BasePage):
         self.find(self.GRID)
         self.token()
         return self
+
+    def go_to_product(self, product_id):
+        """Гортаємо «Далі →», поки картка товару не з'явиться на сторінці."""
+        card = (By.CSS_SELECTOR, f'[data-testid="product-{product_id}"]')
+        while not self.find_all(card):
+            page = self.find(self.PAGE_INFO).text
+            self.click(self.NEXT_PAGE)
+            self.wait.until(lambda _: self.find(self.PAGE_INFO).text != page)
+            self.find(self.GRID)
 
     def open_product(self, product_id):
         self.click((By.CSS_SELECTOR, f'.product-card .product-title[data-detail="{product_id}"]'))
