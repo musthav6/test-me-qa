@@ -32,9 +32,8 @@ def find(products, condition, description):
     raise LookupError(f"У каталозі немає товару: {description}")
 
 
-def in_stock(products, min_stock=1):
-    return find(products, lambda p: p["stock"] >= min_stock, f"stock >= {min_stock}")
-
+def in_stock(products):
+    return find(products, lambda p: p["stock"] > 0, "stock > 0")
 
 def out_of_stock(products):
     return find(products, lambda p: p["stock"] == 0, "stock = 0")

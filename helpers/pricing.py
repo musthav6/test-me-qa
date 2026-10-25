@@ -11,10 +11,6 @@ def normalize_coupon(code):
     return code.strip().upper()
 
 
-def is_known_coupon(code):
-    return normalize_coupon(code) in COUPONS
-
-
 def subtotal(prices, items):
     """prices: {product_id: ціна}, items: [{"product_id", "quantity"}]."""
     return sum(prices[item["product_id"]] * item["quantity"] for item in items)

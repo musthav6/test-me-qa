@@ -27,8 +27,8 @@ def test_unknown_coupon_returns_422(api, catalog):
 
 
 @pytest.mark.parametrize("amount, shipping", [
-    (FREE_SHIPPING_FROM - 100, STANDARD_SHIPPING),  # на 1 грн менше порогу
-    (FREE_SHIPPING_FROM, 0),  # рівно поріг: включно
+    pytest.param(FREE_SHIPPING_FROM - 100, STANDARD_SHIPPING, id="1 UAH below threshold"),
+    pytest.param(FREE_SHIPPING_FROM, 0, id="exactly threshold"),
 ])
 def test_standard_shipping_threshold(api, catalog, amount, shipping):
     items = items_totaling(catalog, amount)
@@ -48,7 +48,10 @@ def test_free_shipping_threshold_is_checked_before_discount(api, catalog):
     assert result["shipping"] == 0
 
 
-@pytest.mark.parametrize("amount", [FREE_SHIPPING_FROM - 100, FREE_SHIPPING_FROM])
+@pytest.mark.parametrize("amount", [
+    pytest.param(FREE_SHIPPING_FROM - 100, id="below threshold"),
+    pytest.param(FREE_SHIPPING_FROM, id="exactly threshold"),
+])
 def test_express_shipping_is_always_150(api, catalog, amount):
     items = items_totaling(catalog, amount)
     assert totals(quote(api, items, delivery="express"))["shipping"] == EXPRESS_SHIPPING
