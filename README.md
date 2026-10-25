@@ -113,4 +113,3 @@ pytest -n 4            # усе паралельно
 pytest -m ui --headed  # UI з вікном браузера
 pytest -k "coupon"     # тести за частиною назви
 ```
-

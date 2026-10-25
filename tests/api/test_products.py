@@ -22,7 +22,6 @@ def ids(products):
     return [p["id"] for p in products]
 
 
-
 QUERIES = {
     "full name": lambda name: name,
     "part of name": lambda name: name[:3],
